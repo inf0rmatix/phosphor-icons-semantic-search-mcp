@@ -1,0 +1,5 @@
+sentence-transformers>=3.0.0
+httpx>=0.28.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+cairosvg>=2.7.0

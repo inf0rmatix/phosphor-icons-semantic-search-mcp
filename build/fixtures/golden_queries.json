@@ -1,0 +1,22 @@
+[
+  {
+    "query": "settings menu configuration",
+    "expectedAnyOf": ["gear", "gear-six", "sliders", "sliders-horizontal", "wrench"]
+  },
+  {
+    "query": "sign out of account logout",
+    "expectedAnyOf": ["sign-out", "sign-out-simple"]
+  },
+  {
+    "query": "warning alert danger",
+    "expectedAnyOf": ["warning", "warning-circle", "warning-diamond", "warning-octagon"]
+  },
+  {
+    "query": "delete trash remove",
+    "expectedAnyOf": ["trash", "trash-simple"]
+  },
+  {
+    "query": "search find magnifying glass",
+    "expectedAnyOf": ["magnifying-glass", "magnifying-glass-plus", "binoculars"]
+  }
+]
