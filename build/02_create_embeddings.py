@@ -12,6 +12,10 @@ from sentence_transformers import SentenceTransformer
 
 BUILD_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BUILD_DIR.parent
+sys.path.insert(0, str(BUILD_DIR))
+
+from lib.search_text import compose_embed_text
+
 DESCRIPTIONS_PATH = BUILD_DIR / "cache" / "descriptions.json"
 OUTPUT_PATH = ROOT_DIR / "data" / "vector_index.json"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
@@ -40,9 +44,9 @@ def main() -> None:
     model = SentenceTransformer(MODEL_NAME)
     entries: list[dict[str, Any]] = []
 
-    descriptions = [icons_map[name]["description"] for name in names]
+    embed_inputs = [compose_embed_text(icons_map[name]) for name in names]
     vectors = model.encode(
-        descriptions,
+        embed_inputs,
         normalize_embeddings=True,
         show_progress_bar=True,
         batch_size=64,
@@ -51,11 +55,13 @@ def main() -> None:
     for index, name in enumerate(names):
         icon = icons_map[name]
         vector = vectors[index].tolist()
+        search_text = embed_inputs[index]
         entries.append(
             {
                 "name": name,
                 "pascalName": icon.get("pascalName", ""),
                 "description": icon["description"],
+                "searchText": search_text,
                 "vector": vector,
                 "svg": icon["svg"],
                 "categories": icon.get("categories", []),

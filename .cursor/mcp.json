@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "phosphor-icons": {
+      "command": "node",
+      "args": ["${workspaceFolder}/dist/index.js"]
+    }
+  }
+}

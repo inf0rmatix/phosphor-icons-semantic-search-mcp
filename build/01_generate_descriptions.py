@@ -30,7 +30,7 @@ DEFAULT_BATCH_SIZE = 8
 DEFAULT_CONCURRENCY = 4
 MAX_RETRIES = 5
 DESCRIPTION_MODE = "vision"
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 
 def load_catalog() -> list[dict[str, Any]]:
@@ -96,17 +96,22 @@ def read_svg(icon_name: str) -> str:
     return svg_path_for_icon(icon_name).read_text(encoding="utf-8")
 
 
+def description_has_search_format(description: str) -> bool:
+    normalized = description.lower()
+    return "search phrases:" in normalized and "primary use:" in normalized
+
+
 def icon_is_cached(cache: dict[str, Any], icon_name: str, model: str) -> bool:
     if icon_name not in cache["icons"]:
         return False
 
-    meta = cache["meta"]
+    icon = cache["icons"][icon_name]
+    description = icon.get("description", "")
 
-    return (
-        meta.get("model") == model
-        and meta.get("descriptionMode") == DESCRIPTION_MODE
-        and meta.get("version") == CACHE_VERSION
-    )
+    if not isinstance(description, str) or not description_has_search_format(description):
+        return False
+
+    return icon.get("descriptionVersion") == CACHE_VERSION and icon.get("model") == model
 
 
 def build_vision_messages(
@@ -124,32 +129,40 @@ def build_vision_messages(
             f"categories=[{categories}]; tags=[{tags}]"
         )
 
-    instructions = f"""You are a UI/UX design expert describing Phosphor icon glyphs for semantic search.
+    instructions = f"""You write icon text for semantic search used by AI coding agents (not marketing copy).
 
-You will receive {len(batch)} icon images in order, each immediately after its label line.
+You will receive {len(batch)} icon images in order, each after its label line.
 Icons in order: {", ".join(icon_names)}
 
-Catalog metadata:
+Catalog metadata (use tags verbatim when relevant):
 {chr(10).join(metadata_lines)}
 
-For EACH icon image, write a hybrid description string with exactly these labeled sections in one paragraph:
-Visual: ...
-Concept: ...
-UI/UX Use Cases: ...
+For EACH icon, return one "description" string with exactly these labeled parts in one paragraph:
 
-Base Visual on what you see in the image. Use metadata for Concept and UI/UX. Be specific and practical.
+Visual: What the glyph looks like (from the image). Do not emphasize literal counts (e.g. "six teeth") unless that is the icon's main identity.
 
-Return JSON with this exact shape:
+Concept: Core meaning in 1-2 short sentences.
+
+Primary use: ONE short phrase for the main UI role (e.g. "settings icon", "logout action", "delete item").
+
+Search phrases: 6-12 comma-separated terms developers might type when looking for this icon (synonyms, verbs, UI patterns). Include catalog tags when they apply. Example: settings, preferences, configuration, admin, options, gear, cog.
+
+Rules:
+- Optimize for search matching, not prose quality.
+- Do not claim "settings menu" unless this icon is a top choice for a generic settings button (gears, sliders yes; toggles/overflow only if that is the primary role).
+- Include logout/sign-in/search/trash synonyms only when appropriate to this icon.
+
+Return JSON:
 {{
   "icons": [
     {{
       "name": "kebab-case-name",
-      "description": "Visual: ... Concept: ... UI/UX Use Cases: ..."
+      "description": "Visual: ... Concept: ... Primary use: ... Search phrases: word1, word2, ..."
     }}
   ]
 }}
 
-Include one entry per icon, in the same order as the images. Do not skip icons."""
+One entry per icon, same order as images. Do not skip icons."""
 
     content: list[dict[str, Any]] = [
         {"type": "text", "text": instructions},
@@ -246,13 +259,16 @@ def request_batch_with_retry(
 
 def generate_offline_description(icon: dict[str, Any]) -> str:
     name = icon["name"]
-    tags = ", ".join(icon.get("tags", [])[:12]) or "general UI"
+    tags_list = [tag for tag in icon.get("tags", []) if not str(tag).startswith("*")]
+    tags = ", ".join(tags_list[:12]) or "interface, ui"
     categories = ", ".join(icon.get("categories", [])) or "interface"
+    name_words = name.replace("-", " ")
 
     return (
-        f"Visual: Phosphor icon glyph named {name}. "
-        f"Concept: {tags}. "
-        f"UI/UX Use Cases: {categories} contexts, navigation, and actions related to {name.replace('-', ' ')}."
+        f"Visual: Phosphor icon glyph {name}. "
+        f"Concept: {categories} icon related to {name_words}. "
+        f"Primary use: {name_words} action or label. "
+        f"Search phrases: {name}, {name_words}, {tags}, {categories}."
     )
 
 
@@ -265,6 +281,7 @@ def merge_batch_into_cache(
     batch: list[dict[str, Any]],
     descriptions: dict[str, str],
     cache_lock: threading.Lock,
+    model: str,
 ) -> None:
     with cache_lock:
         for icon in batch:
@@ -276,8 +293,13 @@ def merge_batch_into_cache(
                 "svg": read_svg(name),
                 "categories": icon.get("categories", []),
                 "tags": icon.get("tags", []),
+                "descriptionVersion": CACHE_VERSION,
+                "model": model,
             }
 
+        cache["meta"]["model"] = model
+        cache["meta"]["descriptionMode"] = DESCRIPTION_MODE
+        cache["meta"]["version"] = CACHE_VERSION
         save_descriptions_cache(cache)
 
 
@@ -298,7 +320,7 @@ def process_batch(
     else:
         descriptions = request_batch_with_retry(client, model, batch, render_size)
 
-    merge_batch_into_cache(cache, batch, descriptions, cache_lock)
+    merge_batch_into_cache(cache, batch, descriptions, cache_lock, model)
     return len(batch)
 
 
@@ -336,9 +358,6 @@ def main() -> None:
 
     catalog = load_catalog()
     cache = load_descriptions_cache()
-    cache["meta"]["model"] = model
-    cache["meta"]["descriptionMode"] = DESCRIPTION_MODE
-    cache["meta"]["version"] = CACHE_VERSION
 
     pending = [
         icon for icon in catalog if not icon_is_cached(cache, icon["name"], model)

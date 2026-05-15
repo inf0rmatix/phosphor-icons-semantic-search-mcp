@@ -102,7 +102,7 @@ npm run build:embeddings
 npm run validate:index
 ```
 
-To rebuild after upgrading description mode, delete `build/cache/descriptions.json` first.
+Description cache version **3** uses search-optimized prompts (`Primary use`, `Search phrases`) and enriched embed text (name + tags + description). Stale cache entries are skipped automatically; delete `build/cache/descriptions.json` to force a full refresh.
 
 For local testing without an API key:
 

@@ -10,6 +10,8 @@ export interface IconIndexEntry {
   name: string;
   pascalName: string;
   description: string;
+  /** Text passed to the embedding model at index build time. */
+  searchText?: string;
   vector: number[];
   svg: string;
   categories?: readonly string[];

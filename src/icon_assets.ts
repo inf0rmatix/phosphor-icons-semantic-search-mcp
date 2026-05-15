@@ -24,7 +24,9 @@ export async function getIconSvg(
     }
   }
 
-  const svgPath = join(assetsRoot, weight, `${name}.svg`);
+  const fileName =
+    weight === "regular" ? `${name}.svg` : `${name}-${weight}.svg`;
+  const svgPath = join(assetsRoot, weight, fileName);
 
   return readFile(svgPath, "utf8");
 }

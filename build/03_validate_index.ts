@@ -38,7 +38,8 @@ async function validateParity(index: IconIndexEntry[]): Promise<void> {
   let failures = 0;
 
   for (const icon of sample) {
-    const runtimeVector = await getEmbedding(icon.description);
+    const embedSource = icon.searchText ?? icon.description;
+    const runtimeVector = await getEmbedding(embedSource);
     const similarity = cosineSimilarity(runtimeVector, icon.vector);
 
     console.error(
