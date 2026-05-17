@@ -31,6 +31,23 @@ export async function getIconSvg(
   return readFile(svgPath, "utf8");
 }
 
+const FLUTTER_ICON_CLASS: Record<IconWeight, string> = {
+  thin: "PhosphorIconsThin",
+  light: "PhosphorIconsLight",
+  regular: "PhosphorIconsRegular",
+  bold: "PhosphorIconsBold",
+  fill: "PhosphorIconsFill",
+  duotone: "PhosphorIconsDuotone",
+};
+
+function pascalToCamel(pascalName: string): string {
+  if (!pascalName) {
+    return pascalName;
+  }
+
+  return pascalName.charAt(0).toLowerCase() + pascalName.slice(1);
+}
+
 export function getReactHints(
   pascalName: string,
   weight: IconWeight = "regular",
@@ -40,6 +57,19 @@ export function getReactHints(
   return {
     importLine: `import { ${pascalName} } from '@phosphor-icons/react';`,
     jsx: `<${pascalName}${weightProp} />`,
+  };
+}
+
+export function getFlutterHints(
+  pascalName: string,
+  weight: IconWeight = "regular",
+): IconSearchResult["flutter"] {
+  const iconClass = FLUTTER_ICON_CLASS[weight];
+  const iconReference = `${iconClass}.${pascalToCamel(pascalName)}`;
+
+  return {
+    importLine: "import 'package:phosphor_flutter/phosphor_flutter.dart';",
+    widget: `PhosphorIcon(${iconReference})`,
   };
 }
 
@@ -57,6 +87,7 @@ export async function toSearchResult(
     description: icon.description,
     svg,
     react: getReactHints(icon.pascalName, weight),
+    flutter: getFlutterHints(icon.pascalName, weight),
     categories: icon.categories,
     tags: icon.tags,
   };

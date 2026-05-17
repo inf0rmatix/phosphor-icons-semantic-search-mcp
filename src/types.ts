@@ -28,6 +28,10 @@ export interface IconSearchResult {
     importLine: string;
     jsx: string;
   };
+  flutter: {
+    importLine: string;
+    widget: string;
+  };
   categories?: readonly string[];
   tags?: readonly string[];
 }

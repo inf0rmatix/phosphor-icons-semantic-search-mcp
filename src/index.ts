@@ -4,7 +4,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-import { getIconSvg, getReactHints, toSearchResult } from "./icon_assets.js";
+import {
+  getFlutterHints,
+  getIconSvg,
+  getReactHints,
+  toSearchResult,
+} from "./icon_assets.js";
 import type { IconWeight } from "./types.js";
 import { formatQueryForEmbedding, getEmbedding } from "./embedder.js";
 import { findIconByName, searchIcons } from "./vector_search.js";
@@ -25,7 +30,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "Use search_icons for intent-based Phosphor icon lookup (e.g. settings menu, logout, add task). Prefer regular weight unless the user asks for bold, fill, or duotone.",
+      "Use search_icons for intent-based Phosphor icon lookup (e.g. settings menu, logout, add task). Prefer regular weight unless the user asks for bold, fill, or duotone. Results include react (@phosphor-icons/react) and flutter (phosphor_flutter) usage hints.",
   },
 );
 
@@ -42,6 +47,7 @@ async function formatIconResult(
     description: result.description,
     svg: result.svg,
     react: result.react,
+    flutter: result.flutter,
     categories: result.categories,
     tags: result.tags,
   };
@@ -115,6 +121,7 @@ server.registerTool(
 
     const svg = await getIconSvg(name, iconWeight);
     const react = getReactHints(icon.pascalName, iconWeight);
+    const flutter = getFlutterHints(icon.pascalName, iconWeight);
 
     return {
       content: [
@@ -127,6 +134,7 @@ server.registerTool(
               description: icon.description,
               svg,
               react,
+              flutter,
               categories: icon.categories,
               tags: icon.tags,
             },
