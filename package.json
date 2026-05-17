@@ -9,7 +9,9 @@
   },
   "files": [
     "dist",
-    "data"
+    "data",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc",
