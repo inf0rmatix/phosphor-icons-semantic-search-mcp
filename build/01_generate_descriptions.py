@@ -18,6 +18,10 @@ BUILD_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BUILD_DIR.parent
 sys.path.insert(0, str(BUILD_DIR))
 
+from lib.description_prompt import (
+    build_description_instructions,
+    description_has_search_format,
+)
 from lib.openrouter_client import OpenRouterApiError, OpenRouterClient
 from lib.svg_to_image import svg_path_to_png_data_url
 
@@ -30,7 +34,7 @@ DEFAULT_BATCH_SIZE = 8
 DEFAULT_CONCURRENCY = 4
 MAX_RETRIES = 5
 DESCRIPTION_MODE = "vision"
-CACHE_VERSION = 3
+CACHE_VERSION = 7
 
 
 def load_catalog() -> list[dict[str, Any]]:
@@ -96,11 +100,6 @@ def read_svg(icon_name: str) -> str:
     return svg_path_for_icon(icon_name).read_text(encoding="utf-8")
 
 
-def description_has_search_format(description: str) -> bool:
-    normalized = description.lower()
-    return "search phrases:" in normalized and "primary use:" in normalized
-
-
 def icon_is_cached(cache: dict[str, Any], icon_name: str, model: str) -> bool:
     if icon_name not in cache["icons"]:
         return False
@@ -118,51 +117,7 @@ def build_vision_messages(
     batch: list[dict[str, Any]],
     render_size: int,
 ) -> list[dict[str, Any]]:
-    icon_names = [icon["name"] for icon in batch]
-    metadata_lines = []
-
-    for icon in batch:
-        categories = ", ".join(icon.get("categories", [])) or "none"
-        tags = ", ".join(icon.get("tags", [])[:10]) or "none"
-        metadata_lines.append(
-            f"- {icon['name']} (pascal: {icon['pascalName']}): "
-            f"categories=[{categories}]; tags=[{tags}]"
-        )
-
-    instructions = f"""You write icon text for semantic search used by AI coding agents (not marketing copy).
-
-You will receive {len(batch)} icon images in order, each after its label line.
-Icons in order: {", ".join(icon_names)}
-
-Catalog metadata (use tags verbatim when relevant):
-{chr(10).join(metadata_lines)}
-
-For EACH icon, return one "description" string with exactly these labeled parts in one paragraph:
-
-Visual: What the glyph looks like (from the image). Do not emphasize literal counts (e.g. "six teeth") unless that is the icon's main identity.
-
-Concept: Core meaning in 1-2 short sentences.
-
-Primary use: ONE short phrase for the main UI role (e.g. "settings icon", "logout action", "delete item").
-
-Search phrases: 6-12 comma-separated terms developers might type when looking for this icon (synonyms, verbs, UI patterns). Include catalog tags when they apply. Example: settings, preferences, configuration, admin, options, gear, cog.
-
-Rules:
-- Optimize for search matching, not prose quality.
-- Do not claim "settings menu" unless this icon is a top choice for a generic settings button (gears, sliders yes; toggles/overflow only if that is the primary role).
-- Include logout/sign-in/search/trash synonyms only when appropriate to this icon.
-
-Return JSON:
-{{
-  "icons": [
-    {{
-      "name": "kebab-case-name",
-      "description": "Visual: ... Concept: ... Primary use: ... Search phrases: word1, word2, ..."
-    }}
-  ]
-}}
-
-One entry per icon, same order as images. Do not skip icons."""
+    instructions = build_description_instructions(batch)
 
     content: list[dict[str, Any]] = [
         {"type": "text", "text": instructions},
@@ -186,7 +141,13 @@ One entry per icon, same order as images. Do not skip icons."""
     return [
         {
             "role": "system",
-            "content": "You return only valid JSON objects for icon metadata.",
+            "content": (
+                "You return only valid JSON for icon metadata. "
+                "Every description must include Visual, Concept, Primary use, "
+                "Search phrases, and Avoid matching. "
+                "Search phrases must include full developer query phrases, not only keywords. "
+                "Differentiate similar icons in the same batch."
+            ),
         },
         {"role": "user", "content": content},
     ]
@@ -213,7 +174,16 @@ def validate_batch_response(
         if not isinstance(name, str) or not isinstance(description, str):
             continue
 
-        descriptions[name] = description.strip()
+        description = description.strip()
+        invalid: list[str] = []
+
+        if not description_has_search_format(description):
+            invalid.append("missing required sections")
+
+        descriptions[name] = description
+
+        if invalid:
+            raise ValueError(f"Invalid description for {name}: {', '.join(invalid)}")
 
     missing = expected_names - set(descriptions.keys())
 
@@ -266,9 +236,10 @@ def generate_offline_description(icon: dict[str, Any]) -> str:
 
     return (
         f"Visual: Phosphor icon glyph {name}. "
-        f"Concept: {categories} icon related to {name_words}. "
-        f"Primary use: {name_words} action or label. "
-        f"Search phrases: {name}, {name_words}, {tags}, {categories}."
+        f"Concept: {categories} icon for {name_words}. "
+        f"Primary use: {name_words} control in the interface. "
+        f"Search phrases: {name}, {name_words}, {tags}, {categories}, icon button. "
+        f"Avoid matching: none."
     )
 
 

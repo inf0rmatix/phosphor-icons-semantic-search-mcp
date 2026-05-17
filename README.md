@@ -102,7 +102,11 @@ npm run build:embeddings
 npm run validate:index
 ```
 
-Description cache version **3** uses search-optimized prompts (`Primary use`, `Search phrases`) and enriched embed text (name + tags + description). Stale cache entries are skipped automatically; delete `build/cache/descriptions.json` to force a full refresh.
+Description cache version **7** uses retrieval-focused prompts (full query phrases, batch contrast, `Avoid matching`). Stale cache entries are skipped automatically; delete `build/cache/descriptions.json` to force a full refresh after prompt changes.
+
+**Embeddings:** index entries use `passage:` text (UI role + search terms + tags only); queries use `query:` prefix. Visual/Concept stay in descriptions returned to agents but are not embedded.
+
+Search is **pure vector similarity** — quality comes from prompts + embed structure at build time.
 
 For local testing without an API key:
 

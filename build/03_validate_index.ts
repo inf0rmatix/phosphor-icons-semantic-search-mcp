@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getEmbedding } from "../src/embedder.js";
+import { formatQueryForEmbedding, getEmbedding } from "../src/embedder.js";
 import type { IconIndexEntry } from "../src/types.js";
 import { cosineSimilarity, searchIcons } from "../src/vector_search.js";
 
@@ -63,7 +63,7 @@ async function validateGoldenQueries(): Promise<void> {
   let failures = 0;
 
   for (const { query, expectedAnyOf } of goldenQueries) {
-    const queryVector = await getEmbedding(query);
+    const queryVector = await getEmbedding(formatQueryForEmbedding(query));
     const topMatches = searchIcons(queryVector, 5);
     const topNames = topMatches.map((match) => match.name);
     const hasExpected = expectedAnyOf.some((name) => topNames.includes(name));

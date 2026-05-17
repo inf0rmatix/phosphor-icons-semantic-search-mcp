@@ -18,5 +18,21 @@
   {
     "query": "search find magnifying glass",
     "expectedAnyOf": ["magnifying-glass", "magnifying-glass-plus", "binoculars"]
+  },
+  {
+    "query": "icon button create new entry in task list",
+    "expectedAnyOf": ["list-plus", "plus", "list-dashes"]
+  },
+  {
+    "query": "add new task to todo list plus button",
+    "expectedAnyOf": ["list-plus", "plus", "list-dashes"]
+  },
+  {
+    "query": "create a new recipe",
+    "expectedAnyOf": ["plus", "cooking-pot", "note-pencil", "file-plus", "chef-hat"]
+  },
+  {
+    "query": "button account management profile settings",
+    "expectedAnyOf": ["user", "user-gear", "user-circle-gear", "identification-card", "user-circle"]
   }
 ]

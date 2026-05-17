@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { getIconSvg, getReactHints, toSearchResult } from "./icon_assets.js";
 import type { IconWeight } from "./types.js";
-import { getEmbedding } from "./embedder.js";
+import { formatQueryForEmbedding, getEmbedding } from "./embedder.js";
 import { findIconByName, searchIcons } from "./vector_search.js";
 
 const iconWeightSchema = z.enum([
@@ -25,7 +25,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "Use search_icons for intent-based Phosphor icon lookup (e.g. settings menu, logout). Prefer regular weight unless the user asks for bold, fill, or duotone.",
+      "Use search_icons for intent-based Phosphor icon lookup (e.g. settings menu, logout, add task). Prefer regular weight unless the user asks for bold, fill, or duotone.",
   },
 );
 
@@ -69,7 +69,7 @@ server.registerTool(
   async ({ query, limit, weight }) => {
     const topK = limit ?? 5;
     const iconWeight = weight ?? "regular";
-    const queryVector = await getEmbedding(query);
+    const queryVector = await getEmbedding(formatQueryForEmbedding(query));
     const matches = searchIcons(queryVector, topK);
     const results = await Promise.all(
       matches.map((match) => formatIconResult(match, match.score, iconWeight)),
