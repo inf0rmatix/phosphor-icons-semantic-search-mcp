@@ -1,4 +1,4 @@
-"""Thin OpenRouter client (parity with cook_book openrouter_api)."""
+"""OpenRouter chat completions client for vision description batches."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ import json
 from typing import Any
 
 import httpx
+
+from lib.json_extract import parse_icons_payload
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_APP_TITLE = "phosphor-icons-semantic-search-mcp"
@@ -30,10 +32,9 @@ class OpenRouterClient:
         base_url: str = DEFAULT_BASE_URL,
         referer: str | None = None,
         app_title: str = DEFAULT_APP_TITLE,
+        *,
+        timeout_seconds: float = 120.0,
     ) -> None:
-        if not api_key:
-            raise ValueError("OpenRouter API key must not be empty.")
-
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -43,7 +44,11 @@ class OpenRouterClient:
         if referer:
             headers["HTTP-Referer"] = referer
 
-        self._client = httpx.Client(base_url=base_url, headers=headers, timeout=120.0)
+        self._client = httpx.Client(
+            base_url=base_url.rstrip("/"),
+            headers=headers,
+            timeout=timeout_seconds,
+        )
 
     def close(self) -> None:
         self._client.close()
@@ -53,9 +58,10 @@ class OpenRouterClient:
         *,
         model: str,
         messages: list[dict[str, Any]],
-        response_format: dict[str, str] | None = None,
-        temperature: float | None = 0.2,
+        response_format: dict[str, Any] | None = None,
+        temperature: float | None = 0.0,
         max_tokens: int | None = None,
+        plugins: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": model,
@@ -71,6 +77,9 @@ class OpenRouterClient:
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
+        if plugins:
+            payload["plugins"] = plugins
+
         response_map = self._post_json("/chat/completions", payload)
         choices = response_map.get("choices", [])
 
@@ -78,6 +87,15 @@ class OpenRouterClient:
             raise OpenRouterApiError("Chat completion returned no choices.")
 
         first_choice = choices[0]
+        finish_reason = first_choice.get("finish_reason")
+
+        if finish_reason == "length":
+            raise OpenRouterApiError(
+                "Chat completion truncated (finish_reason=length). "
+                "Increase OPENROUTER_MAX_TOKENS or reduce OPENROUTER_BATCH_SIZE.",
+                details={"max_tokens": max_tokens},
+            )
+
         choice_error = first_choice.get("error")
 
         if choice_error and choice_error.get("message"):
@@ -87,21 +105,21 @@ class OpenRouterClient:
             )
 
         message = first_choice.get("message", {})
-        content = message.get("content")
+        content_text = extract_assistant_text(message)
 
-        if not content:
+        if not content_text:
             raise OpenRouterApiError("Chat completion did not include assistant content.")
 
         try:
-            decoded = json.loads(content)
-        except json.JSONDecodeError as error:
-            raise OpenRouterApiError(
-                "Failed to decode assistant JSON response.",
-                details=error,
-            ) from error
+            decoded = json.loads(content_text)
+        except json.JSONDecodeError:
+            decoded = parse_icons_payload(content_text)
 
         if not isinstance(decoded, dict):
-            raise OpenRouterApiError("Assistant response content was not a JSON object.")
+            raise OpenRouterApiError(
+                "Failed to decode assistant JSON response.",
+                details={"preview": content_text[:500]},
+            )
 
         return decoded
 
@@ -156,3 +174,27 @@ class OpenRouterClient:
             status_code=status_code,
             details=error.response.text,
         )
+
+
+def extract_assistant_text(message: dict[str, Any]) -> str:
+    content = message.get("content")
+
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+
+    if isinstance(content, list):
+        text_parts: list[str] = []
+
+        for part in content:
+            if not isinstance(part, dict):
+                continue
+
+            if part.get("type") == "text" and isinstance(part.get("text"), str):
+                text_parts.append(part["text"])
+
+        combined = "\n".join(text_parts).strip()
+
+        if combined:
+            return combined
+
+    return ""

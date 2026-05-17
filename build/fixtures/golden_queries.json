@@ -1,38 +1,106 @@
 [
   {
-    "query": "settings menu configuration",
+    "query": "settings menu configuration preferences",
     "expectedAnyOf": ["gear", "gear-six", "sliders", "sliders-horizontal", "wrench"]
   },
   {
-    "query": "sign out of account logout",
+    "query": "sign out logout leave session",
     "expectedAnyOf": ["sign-out", "sign-out-simple"]
   },
   {
-    "query": "warning alert danger",
+    "query": "sign in login authenticate",
+    "expectedAnyOf": ["sign-in", "sign-in-simple"]
+  },
+  {
+    "query": "warning alert danger error",
     "expectedAnyOf": ["warning", "warning-circle", "warning-diamond", "warning-octagon"]
   },
   {
-    "query": "delete trash remove",
-    "expectedAnyOf": ["trash", "trash-simple"]
+    "query": "delete remove trash discard",
+    "expectedAnyOf": ["trash", "trash-simple", "eraser"]
   },
   {
-    "query": "search find magnifying glass",
+    "query": "search find magnifying glass lookup",
     "expectedAnyOf": ["magnifying-glass", "magnifying-glass-plus", "binoculars"]
   },
   {
-    "query": "icon button create new entry in task list",
+    "query": "filter results refine funnel",
+    "expectedAnyOf": ["funnel", "funnel-simple", "funnel-x"]
+  },
+  {
+    "query": "add new item fab create button",
+    "expectedAnyOf": ["plus", "plus-circle", "plus-square"]
+  },
+  {
+    "query": "add new row entry to list",
     "expectedAnyOf": ["list-plus", "plus", "list-dashes"]
   },
   {
-    "query": "add new task to todo list plus button",
-    "expectedAnyOf": ["list-plus", "plus", "list-dashes"]
+    "query": "mark item complete done checkbox",
+    "expectedAnyOf": ["check", "check-circle", "list-checks", "checks"]
   },
   {
-    "query": "create a new recipe",
-    "expectedAnyOf": ["plus", "cooking-pot", "note-pencil", "file-plus", "chef-hat"]
+    "query": "user profile account my account",
+    "expectedAnyOf": ["user", "user-circle", "user-square", "identification-card"]
   },
   {
-    "query": "button account management profile settings",
-    "expectedAnyOf": ["user", "user-gear", "user-circle-gear", "identification-card", "user-circle"]
+    "query": "account settings profile preferences gear",
+    "expectedAnyOf": ["user-gear", "user-circle-gear", "gear", "gear-six"]
+  },
+  {
+    "query": "switch change user account",
+    "expectedAnyOf": ["user-switch", "arrows-left-right", "swap"]
+  },
+  {
+    "query": "upload file attachment",
+    "expectedAnyOf": ["upload", "upload-simple", "cloud-arrow-up", "paperclip"]
+  },
+  {
+    "query": "download save file",
+    "expectedAnyOf": ["download", "download-simple", "cloud-arrow-down"]
+  },
+  {
+    "query": "edit document pencil compose",
+    "expectedAnyOf": ["pencil", "pencil-simple", "note-pencil", "pen"]
+  },
+  {
+    "query": "share export send link",
+    "expectedAnyOf": ["share", "share-network", "export", "paper-plane-tilt"]
+  },
+  {
+    "query": "notifications alert bell",
+    "expectedAnyOf": ["bell", "bell-ringing", "bell-simple"]
+  },
+  {
+    "query": "home dashboard main screen",
+    "expectedAnyOf": ["house", "house-simple", "house-line"]
+  },
+  {
+    "query": "close dismiss modal cancel",
+    "expectedAnyOf": ["x", "x-circle", "x-square"]
+  },
+  {
+    "query": "copy duplicate clipboard",
+    "expectedAnyOf": ["copy", "copy-simple", "clipboard"]
+  },
+  {
+    "query": "expand collapse show more chevron",
+    "expectedAnyOf": ["caret-down", "caret-up", "carets-down-up", "caret-circle-down"]
+  },
+  {
+    "query": "shopping cart checkout buy",
+    "expectedAnyOf": ["shopping-cart", "shopping-cart-simple", "basket"]
+  },
+  {
+    "query": "calendar add schedule new event",
+    "expectedAnyOf": ["calendar-plus", "calendar", "calendar-blank"]
+  },
+  {
+    "query": "open library folder browse files",
+    "expectedAnyOf": ["folder-open", "folder", "folders", "folder-notch-open"]
+  },
+  {
+    "query": "help support question info",
+    "expectedAnyOf": ["question", "info", "lifebuoy", "seal-question"]
   }
 ]

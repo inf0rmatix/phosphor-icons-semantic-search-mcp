@@ -16,6 +16,7 @@
     "start": "node dist/index.js",
     "export-catalog": "tsx build/export_catalog.ts",
     "build:descriptions": ".venv/bin/python build/01_generate_descriptions.py",
+    "smoke:descriptions": ".venv/bin/python build/smoke_test_descriptions.py",
     "build:embeddings": ".venv/bin/python build/02_create_embeddings.py",
     "build:data": "npm run export-catalog && npm run build:descriptions && npm run build:embeddings",
     "build:full": "npm run build && npm run build:data && npm run validate:index",

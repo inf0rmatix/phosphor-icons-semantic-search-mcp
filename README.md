@@ -97,14 +97,14 @@ Or step by step:
 
 ```bash
 npm run export-catalog
-npm run build:descriptions   # ~189 batches of 8 icons, 4 parallel workers
+npm run build:descriptions   # 1 icon per request, 8 parallel workers (~1512 requests)
 npm run build:embeddings
 npm run validate:index
 ```
 
-Description cache version **7** uses retrieval-focused prompts (full query phrases, batch contrast, `Avoid matching`). Stale cache entries are skipped automatically; delete `build/cache/descriptions.json` to force a full refresh after prompt changes.
+Description cache version **11** uses one icon per vision request with optional Gemini prompt caching on OpenRouter. Stale cache entries are skipped automatically; delete `build/cache/descriptions.json` to force a full refresh after prompt changes.
 
-**Embeddings:** index entries use `passage:` text (UI role + search terms + tags only); queries use `query:` prefix. Visual/Concept stay in descriptions returned to agents but are not embedded.
+**Embeddings:** index entries use `passage:` text (UI role, search terms, optional "Does not match", tags); queries use `query:` prefix. Visual/Concept stay in agent-facing descriptions only.
 
 Search is **pure vector similarity** — quality comes from prompts + embed structure at build time.
 
@@ -114,18 +114,26 @@ For local testing without an API key:
 USE_OFFLINE_DESCRIPTIONS=1 npm run build:descriptions
 ```
 
-Offline descriptions use catalog tags/categories only; OpenRouter produces much better semantic search quality.
+Offline descriptions use catalog tags/categories only; vision LLM descriptions produce much better semantic search quality.
+
+Set `OPENROUTER_API_KEY` in `.env` (see `.env.example`). Descriptions use **OpenRouter** with **`google/gemini-2.5-flash-lite`** by default.
 
 ### Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENROUTER_API_KEY` | — | Required for LLM descriptions |
-| `OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | OpenRouter model slug (vision-capable) |
-| `OPENROUTER_BATCH_SIZE` | `8` | Icons per API request |
-| `OPENROUTER_CONCURRENCY` | `4` | Parallel batch requests |
-| `ICON_RENDER_SIZE` | `128` | PNG size for vision prompts |
-| `USE_OFFLINE_DESCRIPTIONS` | — | Set to `1` to skip OpenRouter |
+| `OPENROUTER_API_KEY` | — | OpenRouter API key |
+| `OPENROUTER_MODEL` | `google/gemini-2.5-flash-lite` | OpenRouter model (vision) |
+| `OPENROUTER_BATCH_SIZE` | `1` | Icons per request (use `1` for reliability + prompt cache) |
+| `OPENROUTER_CONCURRENCY` | `8` | Parallel requests |
+| `OPENROUTER_PROMPT_CACHING` | `1` | `cache_control` on static prompt blocks ([Gemini caching](https://openrouter.ai/docs/guides/best-practices/prompt-caching)) |
+| `OPENROUTER_TIMEOUT_SECONDS` | `120` | HTTP timeout per request |
+| `OPENROUTER_MAX_TOKENS` | `1800 × batch size` | Cap completion tokens (truncation is not repairable) |
+| `OPENROUTER_STRUCTURED_OUTPUT` | `1` | Set `0` to omit `response_format` |
+| `OPENROUTER_JSON_SCHEMA` | `1` | Strict schema via [OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs) |
+| `OPENROUTER_RESPONSE_HEALING` | `1` | [Response Healing](https://openrouter.ai/docs/guides/features/plugins/response-healing) plugin for malformed JSON |
+| `ICON_RENDER_SIZE` | `512` | PNG size for vision prompts |
+| `USE_OFFLINE_DESCRIPTIONS` | — | Set to `1` to skip the LLM |
 
 ## Development
 
@@ -139,13 +147,15 @@ npm run validate:index # parity + golden query checks
 
 ## Golden queries
 
-Validation checks these intents (see `build/fixtures/golden_queries.json`):
+`npm run validate:index` checks diverse UI intents (see `build/fixtures/golden_queries.json`), for example:
 
-- `"settings menu configuration"` → `gear-six`, `gear`, `sliders`, …
-- `"sign out of account logout"` → `sign-out`
-- `"warning alert danger"` → `warning`, `warning-circle`, …
-- `"delete trash remove"` → `trash`, `trash-simple`
-- `"search find magnifying glass"` → `magnifying-glass`, …
+- Settings, auth (sign-in / sign-out), warnings, delete, search, filter
+- Generic add (`plus`), add-to-list, mark complete
+- Profile vs account settings vs switch user
+- Upload, download, edit, share, notifications, home, close, copy
+- Expand/collapse, cart, calendar, browse folders, help
+
+Each query expects a matching icon in the top 5 — not tied to one app domain.
 
 ## License
 

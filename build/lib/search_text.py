@@ -92,6 +92,11 @@ def compose_embed_text(icon: dict[str, Any]) -> str:
     if search_phrases:
         body_parts.append(f"Search terms: {search_phrases}.")
 
+    avoid_matching = sections.get("avoid_matching", "")
+
+    if avoid_matching and avoid_matching.strip().lower() not in {"none", "n/a"}:
+        body_parts.append(f"Does not match: {avoid_matching}.")
+
     clean_tags = _clean_tag_list(list(tags or []))
 
     if clean_tags:

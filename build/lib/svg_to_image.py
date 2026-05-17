@@ -7,7 +7,7 @@ from pathlib import Path
 
 import cairosvg
 
-DEFAULT_RENDER_SIZE = 128
+DEFAULT_RENDER_SIZE = 512
 
 
 def svg_path_to_png_data_url(svg_path: Path, size: int = DEFAULT_RENDER_SIZE) -> str:
