@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/inf0rmatix-phosphor-icons-semantic-search-mcp-badge.png)](https://mseep.ai/app/inf0rmatix-phosphor-icons-semantic-search-mcp)
+
 # Phosphor Icons Semantic Search MCP
 
 MCP server for finding [Phosphor](https://phosphoricons.com) icons by what you mean (settings, logout, delete, and so on), not only by exact name.
